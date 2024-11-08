@@ -155,7 +155,14 @@ app.get('/:id', (req, res) => {
     const choiceUrl = Math.floor(Math.random() * urls.length);
     urls[choiceUrl].used++;
     writeData(data);
-    res.redirect(urls[choiceUrl].url);
+
+    let url = urls[choiceUrl].url;
+
+    if (!url.startsWith('http')) {
+        url = `https://${url}`;
+    }
+
+    res.redirect(url);
 });
 
 // Route pour ajouter plusieurs liens avec un ID généré automatiquement
