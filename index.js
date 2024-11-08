@@ -17,8 +17,6 @@ function writeData(data) {
 // Middleware pour traiter les requêtes JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Route pour la page admin
 app.get('/dilaraadminlabest', (req, res) => {
     const data = readData();
     res.send(`
@@ -27,76 +25,105 @@ app.get('/dilaraadminlabest', (req, res) => {
             <title>Page Admin - Codeky</title>
             <style>
                 body {
-                    font-family: Arial, sans-serif;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     margin: 0;
                     padding: 0;
-                    background-color: #f4f4f9;
+                    background-color: #f9fafc;
                     color: #333;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                }
+                .container {
+                    width: 90%;
+                    max-width: 700px;
+                    margin: 20px auto;
+                    background-color: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                    padding: 20px;
                     text-align: center;
                 }
-                h1, h2, h3 {
-                    color: #4CAF50;
+                h1 {
+                    color: #34495e;
+                    font-size: 24px;
+                    margin-bottom: 20px;
                 }
-                ul {
-                    list-style-type: none;
-                    padding: 0;
-                }
-                ul li {
-                    margin: 5px 0;
-                }
-                a {
-                    text-decoration: none;
-                    color: #4CAF50;
-                }
-                form {
-                    margin: 20px 0;
-                }
-                textarea, button {
-                    padding: 10px;
-                    font-size: 1em;
-                    margin-top: 10px;
-                }
-                textarea {
-                    width: 80%;
-                    height: 60px;
-                }
-                button {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    cursor: pointer;
-                }
-                button:hover {
-                    background-color: #45a049;
+                h2 {
+                    color: #2c3e50;
+                    font-size: 20px;
+                    margin-bottom: 15px;
                 }
                 .link-item {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     padding: 10px;
-                    border-bottom: 1px solid #ddd;
+                    background-color: #ecf0f1;
+                    border-radius: 5px;
+                    margin-bottom: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    transition: background-color 0.3s;
+                }
+                .link-item:hover {
+                    background-color: #dce1e5;
+                }
+                .link-item a {
+                    color: #3498db;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                form {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin-top: 20px;
+                }
+                textarea {
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    resize: none;
+                    margin-bottom: 15px;
+                }
+                button {
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    background-color: #27ae60;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                }
+                button:hover {
+                    background-color: #2ecc71;
                 }
             </style>
         </head>
         <body>
-            <h1>Page Admin</h1>
-            <h2>Redirections</h2>
-            <ul>
-                ${Object.keys(data).map(id => `
-                    <li class="link-item">
-                        <a href="/dilaraadminlabest/${id}">${id}</a>
-                    </li>`).join('')}
-            </ul>
-            <form method="POST" action="/admin/add">
-                <textarea name="urls" placeholder="Entrez plusieurs URLs, séparées par des virgules" required></textarea>
-                <button type="submit">Ajouter des liens</button>
-            </form>
+            <div class="container">
+                <h1>Page Admin - Gestion des Redirections</h1>
+                <h2>Liens Disponibles</h2>
+                <ul>
+                    ${Object.keys(data).map(id => `
+                        <li class="link-item">
+                            <a href="/dilaraadminlabest/${id}">${id}</a>
+                        </li>`).join('')}
+                </ul>
+                <form method="POST" action="/admin/add">
+                    <textarea name="urls" placeholder="Entrez plusieurs URLs, séparées par des virgules" required></textarea>
+                    <button type="submit">Ajouter des liens</button>
+                </form>
+            </div>
         </body>
         </html>
     `);
 });
 
-// Route pour voir et gérer les redirections d'un `id` spécifique
 app.get('/dilaraadminlabest/:id', (req, res) => {
     const data = readData();
     const id = req.params.id;
@@ -107,42 +134,162 @@ app.get('/dilaraadminlabest/:id', (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>Page Admin - Codeky</title>
+            <title>Page Admin - Édition du Lien</title>
             <style>
-                body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; text-align: center; }
-                h1, h2, h3 { color: #4CAF50; }
-                ul { list-style-type: none; padding: 0; }
-                li { margin: 10px 0; }
-                form { display: inline; }
-                button { padding: 5px 10px; color: #fff; background-color: #e53935; border: none; cursor: pointer; }
-                button:hover { background-color: #c62828; }
-                .link-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #ddd; }
-                textarea { width: 80%; margin-top: 10px; }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f9fafc;
+                    color: #333;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                }
+                .container {
+                    width: 90%;
+                    max-width: 700px;
+                    margin: 20px auto;
+                    background-color: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                    padding: 20px;
+                    text-align: center;
+                }
+                h1 {
+                    color: #34495e;
+                    font-size: 24px;
+                    margin-bottom: 20px;
+                }
+                h2 {
+                    color: #2c3e50;
+                    font-size: 20px;
+                    margin-bottom: 15px;
+                }
+                .link-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px;
+                    background-color: #ecf0f1;
+                    border-radius: 5px;
+                    margin-bottom: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    transition: background-color 0.3s;
+                }
+                .link-item:hover {
+                    background-color: #dce1e5;
+                }
+                .link-info {
+                    text-align: left;
+                    font-size: 14px;
+                    color: #7f8c8d;
+                }
+                form {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin-top: 20px;
+                }
+                button {
+                    padding: 8px 12px;
+                    font-size: 14px;
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    margin-left: 5px;
+                }
+                button:hover {
+                    background-color: #c0392b;
+                }
+                textarea {
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    resize: none;
+                    margin-bottom: 15px;
+                }
+                .add-links button {
+                    background-color: #27ae60;
+                }
+                .add-links button:hover {
+                    background-color: #2ecc71;
+                }
+                .share-link {
+                    display: block;
+                    font-size: 18px;
+                    margin-top: 15px;
+                    color: #3498db;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                .share-link:hover {
+                    color: #2980b9;
+                }
+                .copy-button {
+                    padding: 8px 12px;
+                    font-size: 14px;
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    margin-top: 10px;
+                }
+                .copy-button:hover {
+                    background-color: #2980b9;
+                }
             </style>
+            <script>
+                function copyLink() {
+                    let link = document.getElementById("shareLink").textContent;
+                    link = link.trim();
+                    
+                    navigator.clipboard.writeText(link)
+                }
+            </script>
         </head>
         <body>
-            <h1>Page Admin</h1>
-            <h2>Redirections</h2>
-            <h3>Lien à partager: link.codeky.fr/${id}</h3>
-            <ul>
-                ${urls.map((url, index) => `
-                    <li class="link-item">
-                        ${url.url} - Visites : ${url.used}
-                        <form method="POST" action="/admin/delete/${id}/${index}">
-                            <button type="submit">Supprimer</button>
-                        </form>
-                    </li>
-                `).join('')}
-            </ul>
-            <h3>Ajouter d'autres liens à cet ID</h3>
-            <form method="POST" action="/admin/add-links/${id}">
-                <textarea name="urls" placeholder="Entrez plusieurs URLs, séparées par des virgules" required></textarea>
-                <button type="submit">Ajouter des liens</button>
-            </form>
+            <div class="container">
+                <h1>Édition des Redirections</h1>
+                <h2>ID : ${id}</h2>
+                <div><span class="">Partager ce lien :</span>
+                    <a id="shareLink" href="https://link.codeky.fr/${id}" target="_blank" class="share-link">
+                        link.codeky.fr/${id}
+                    </a>
+                    <button onclick="copyLink()" class="copy-button">Copier le lien</button>
+                </div>
+                <ul>
+                    ${urls.map((urlObj, index) => `
+                        <li class="link-item">
+                            <div>
+                                <strong>${urlObj.url}</strong>
+                                <div class="link-info">Visites : ${urlObj.used}</div>
+                            </div>
+                            <form method="POST" action="/admin/delete/${id}/${index}">
+                                <button type="submit">Supprimer</button>
+                            </form>
+                        </li>
+                    `).join('')}
+                </ul>
+                <h3>Ajouter de nouveaux liens à cet ID</h3>
+                <form method="POST" action="/admin/add-links/${id}" class="add-links">
+                    <textarea name="urls" placeholder="Entrez plusieurs URLs, séparées par des virgules" required></textarea>
+                    <button type="submit">Ajouter des liens</button>
+                </form>
+            </div>
         </body>
         </html>
     `);
 });
+
 
 // Route pour rediriger vers une URL aléatoire d'un `id` spécifique
 app.get('/:id', (req, res) => {
