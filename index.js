@@ -17,6 +17,7 @@ function writeData(data) {
 // Middleware pour traiter les requêtes JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.get('/dilaraadminlabest', (req, res) => {
     const data = readData();
     res.send(`
@@ -284,14 +285,22 @@ app.get('/dilaraadminlabest/:id', (req, res) => {
                     <textarea name="urls" placeholder="Entrez plusieurs URLs, séparées par des virgules" required></textarea>
                     <button type="submit">Ajouter des liens</button>
                 </form>
+                <form method="POST" action="/admin/update-options/${id}" class="add-links">
+                    <label>
+                        <input type="radio" name="random" value="true" ${data[id].options?.random ? 'checked' : ''}> Aléatoire
+                    </label>
+                    <label>
+                        <input type="radio" name="random" value="false" ${!data[id].options?.random ? 'checked' : ''}> Séquentiel
+                    </label>
+                    <button type="submit">Mettre à jour l'option</button>
+                </form>
             </div>
         </body>
         </html>
     `);
 });
 
-
-// Route pour rediriger vers une URL aléatoire d'un `id` spécifique
+// Route pour rediriger vers une URL (aléatoire ou séquentielle) d'un `id` spécifique
 app.get('/:id', (req, res) => {
     const data = readData();
     const id = req.params.id;
@@ -299,11 +308,18 @@ app.get('/:id', (req, res) => {
     if (!urls) {
         return res.sendStatus(404);
     }
-    const choiceUrl = Math.floor(Math.random() * urls.length);
-    urls[choiceUrl].used++;
+
+    let choiceIndex;
+    if (data[id].options?.random) {
+        choiceIndex = Math.floor(Math.random() * urls.length);
+    } else {
+        choiceIndex = urls.findIndex(urlObj => urlObj.used === Math.min(...urls.map(u => u.used)));
+    }
+
+    urls[choiceIndex].used++;
     writeData(data);
 
-    let url = urls[choiceUrl].url;
+    let url = urls[choiceIndex].url;
 
     if (!url.startsWith('http')) {
         url = `https://${url}`;
@@ -321,7 +337,7 @@ app.post('/admin/add', (req, res) => {
     const data = readData();
     const id = uuidv4();
     const urlList = urls.split(',').map(url => ({ url: url.trim(), used: 0 }));
-    data[id] = { urls: urlList };
+    data[id] = { options: { random: true }, urls: urlList };
     writeData(data);
     res.redirect(`/dilaraadminlabest/${id}`);
 });
@@ -339,6 +355,19 @@ app.post('/admin/add-links/:id', (req, res) => {
     }
     const newUrls = urls.split(',').map(url => ({ url: url.trim(), used: 0 }));
     data[id].urls.push(...newUrls);
+    writeData(data);
+    res.redirect(`/dilaraadminlabest/${id}`);
+});
+
+// Route pour mettre à jour les options (aléatoire/séquentiel) d'un ID donné
+app.post('/admin/update-options/:id', (req, res) => {
+    const { random } = req.body;
+    const id = req.params.id;
+    const data = readData();
+    if (!data[id]) {
+        return res.status(404).send("ID non trouvé.");
+    }
+    data[id].options.random = random === 'true';
     writeData(data);
     res.redirect(`/dilaraadminlabest/${id}`);
 });
