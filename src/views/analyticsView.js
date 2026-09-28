@@ -1,184 +1,170 @@
-const { layout } = require('./layout');
+const { layout, icon, esc } = require('./layout');
 
 function analyticsView(group, data) {
   const { totals = { clicks: 0 }, byCountry = [], byBrowser = [], byOs = [], lastClicks = [], byDay = [], deviceDist = [], byHour = [], topReferrers = [], urlBreakdown = [], period = {} } = data || {};
   const id = group.id;
-  const statItem = (label, value) => `<div class="item"><div>${label}</div><div class="badge">${value}</div></div>`;
+  const fmtDate = (d) => d ? new Date(d).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  const noData = `<div class="empty">${icon('inbox')}<div>Aucune donnée</div></div>`;
 
-  const countries = byCountry.slice(0, 8).map(row => statItem(row.country || 'N/A', row.c)).join('') || '<div class="item"><span class="badge">Aucune donnée</span></div>';
+  const barList = (items, labelOf) => {
+    if (!items.length) return noData;
+    const max = Math.max(1, ...items.map(r => r.c));
+    return items.map(r => `
+      <div class="bar-row">
+        <div class="top"><span class="name">${esc(labelOf(r))}</span><span class="num">${r.c}</span></div>
+        <div class="bar"><span style="width:${(r.c / max * 100).toFixed(1)}%"></span></div>
+      </div>`).join('');
+  };
+
+  const chartCard = (title, canvasId, hasData, cls = '') => `
+    <div class="card">
+      <div class="card-head"><h3>${title}</h3></div>
+      <div class="card-body"><div class="chart-box ${cls}">${hasData ? `<canvas id="${canvasId}"></canvas>` : '<div class="chart-empty">Aucune donnée</div>'}</div></div>
+    </div>`;
 
   const rows = lastClicks.map(c => `
     <tr>
-      <td>${new Date(c.ts).toLocaleString()}</td>
-      <td>${c.country || ''}</td>
-      <td>${c.city || ''}</td>
-      <td>${c.ip || ''}</td>
-      <td>${c.browser || ''}</td>
-      <td>${c.os || ''}</td>
-      <td class="muted">${c.referer || ''}</td>
+      <td>${esc(fmtDate(c.ts))}</td>
+      <td>${esc(c.country || '—')}</td>
+      <td>${esc(c.city || '—')}</td>
+      <td class="mono muted">${esc(c.ip || '')}</td>
+      <td>${esc(c.browser || '')}</td>
+      <td>${esc(c.os || '')}</td>
+      <td class="muted trunc">${esc(c.referer || 'Direct')}</td>
     </tr>
   `).join('');
 
-  const table = rows ? `<div class="card table"><table class="data">
-    <thead><tr><th>Date</th><th>Pays</th><th>Ville</th><th>IP</th><th>Navigateur</th><th>OS</th><th>Référent</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>` : '<div class="card"><span class="badge">Pas encore de clics</span></div>';
+  const table = `
+    <div class="card">
+      <div class="card-head"><h3>Derniers clics</h3><span class="badge">${lastClicks.length}</span></div>
+      ${rows ? `<div class="table"><table class="data">
+        <thead><tr><th>Date</th><th>Pays</th><th>Ville</th><th>IP</th><th>Navigateur</th><th>OS</th><th>Référent</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : `<div class="empty">${icon('inbox')}<div>Pas encore de clics</div></div>`}
+    </div>`;
 
-  const daily = byDay.slice().reverse().map(d => `<div class="item"><div>${d.day}</div><div class="badge">${d.c}</div></div>`).join('') || '<div class="item"><span class="badge">Aucune donnée</span></div>';
+  const payload = JSON.stringify({ byDay, byBrowser, byOs, deviceDist, byHour, topReferrers }).replace(/</g, '\\u003c');
 
   const content = `
-    <div class="card">
-      <h1>Analytics <span class="kbd">${id}</span></h1>
-      <div class="subtitle">Aperçu des clics et informations du public.</div>
-      <div class="actions" style="margin:8px 0 12px">
-        <a class="btn" href="/panel/${id}">Retour</a>
-        <a class="btn btn-primary" href="/panel/${id}/analytics.csv">Exporter CSV</a>
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Analytics</div>
+        <h1>Groupe <span class="kbd">${esc(id)}</span></h1>
+        <div class="subtitle">${icon('calendar')} ${esc(fmtDate(period.start))} → ${esc(fmtDate(period.end))}</div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="value">${totals.clicks || 0}</div><div class="label">Total clics</div></div>
-        <div class="stat"><div class="value">${totals.visitors || 0}</div><div class="label">Visiteurs uniques</div></div>
-        <div class="stat"><div class="value">${(byCountry[0]?.country || '—')}</div><div class="label">Top pays</div></div>
-        <div class="stat"><div class="value">${(byBrowser[0]?.browser || '—')}</div><div class="label">Top navigateur</div></div>
-      </div>
-      <div class="chip">Période: ${period.start ? new Date(period.start).toLocaleString() : '—'} → ${period.end ? new Date(period.end).toLocaleString() : '—'}</div>
-    </div>
-    <div class="card" style="margin-top:16px;">
-      <h3>Liens les plus cliqués</h3>
-      <div class="divider"></div>
-      ${urlBreakdown.length ? urlBreakdown.map(u => `<div class="item"><div class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${u.url}</div><div class="badge">${u.c}</div></div>`).join('') : '<div class="item"><span class="badge">Aucune donnée</span></div>'}
-      <div class="divider" style="margin:12px 0"></div>
-      <div class="badge">Période: ${period.start ? new Date(period.start).toLocaleString() : '—'} → ${period.end ? new Date(period.end).toLocaleString() : '—'}</div>
-    </div>
-    <div class="grid-2">
-      <div class="col">
-        <div class="card">
-          <h3>Total clics</h3>
-          <div class="divider"></div>
-          ${countries}
-        </div>
-        <div class="card">
-          <h3>Par jour</h3>
-          <div class="divider"></div>
-          <canvas id="chartDaily" height="120"></canvas>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card">
-          <h3>Navigateur</h3>
-          <div class="divider"></div>
-          <canvas id="chartBrowser" height="120"></canvas>
-        </div>
-        <div class="card">
-          <h3>Système</h3>
-          <div class="divider"></div>
-          <canvas id="chartOS" height="120"></canvas>
-        </div>
+      <div class="actions">
+        <a class="btn" href="/panel/${esc(id)}">${icon('arrowLeft')} Retour</a>
+        <a class="btn btn-primary" href="/panel/${esc(id)}/analytics.csv">${icon('download')} Exporter CSV</a>
       </div>
     </div>
-    <div class="grid-2" style="margin-top:16px;">
-      <div class="col">
+
+    <div class="stats">
+      <div class="card stat"><div class="label">${icon('click')} Total clics</div><div class="value">${totals.clicks || 0}</div></div>
+      <div class="card stat"><div class="label">${icon('users')} Visiteurs uniques</div><div class="value">${totals.visitors || 0}</div></div>
+      <div class="card stat"><div class="label">${icon('globe')} Top pays</div><div class="value">${esc(byCountry[0]?.country || '—')}</div></div>
+      <div class="card stat"><div class="label">${icon('compass')} Top navigateur</div><div class="value">${esc(byBrowser[0]?.browser || '—')}</div></div>
+    </div>
+
+    <div class="stack">
+      ${chartCard('Clics par jour', 'chartDaily', byDay.length)}
+
+      <div class="grid-2">
         <div class="card">
-          <h3>Appareil</h3>
-          <div class="divider"></div>
-          <canvas id="chartDevice" height="120"></canvas>
+          <div class="card-head"><h3>Liens les plus cliqués</h3></div>
+          <div class="card-body tight">${barList(urlBreakdown, u => u.url)}</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Pays</h3></div>
+          <div class="card-body tight">${barList(byCountry.slice(0, 8), r => r.country || 'Inconnu')}</div>
         </div>
       </div>
-      <div class="col">
-        <div class="card">
-          <h3>Par heure</h3>
-          <div class="divider"></div>
-          <canvas id="chartHour" height="120"></canvas>
-        </div>
+
+      <div class="grid-2">
+        ${chartCard('Navigateur', 'chartBrowser', byBrowser.length, 'sm')}
+        ${chartCard('Système', 'chartOS', byOs.length, 'sm')}
       </div>
+
+      <div class="grid-2">
+        ${chartCard('Appareil', 'chartDevice', deviceDist.length, 'sm')}
+        ${chartCard('Par heure', 'chartHour', byHour.length, 'sm')}
+      </div>
+
+      ${chartCard('Référents', 'chartRef', topReferrers.length, 'sm')}
+
+      ${table}
     </div>
-    <div class="card" style="margin-top:16px;">
-      <h3>Référents</h3>
-      <div class="divider"></div>
-      <canvas id="chartRef" height="120"></canvas>
-    </div>
-    ${table}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
-      const dataPayload = ${JSON.stringify({
-        byDay,
-        byBrowser,
-        byOs,
-        deviceDist: data.deviceDist || [],
-        byHour: data.byHour || [],
-        topReferrers: data.topReferrers || [],
-      })};
-
-      function palette(n){
-        const colors = ['#6ea8ff','#36d399','#ffb366','#a78bfa','#60a5fa','#f472b6','#facc15','#34d399','#fb7185','#93c5fd'];
-        return Array.from({length:n}, (_,i)=>colors[i%colors.length]);
-      }
+      const dataPayload = ${payload};
 
       function mount(){
-        // Daily trend (line)
+        const css = getComputedStyle(document.documentElement);
+        const v = (name) => css.getPropertyValue(name).trim();
+        const accent = v('--accent'), muted = v('--muted'), border = v('--border'), surface = v('--surface');
+        const palette = [accent, '#3ecf8e', '#f5b454', '#b07cff', '#38bdf8', '#f472b6', '#a3e635', '#fb7185'];
+
+        Chart.defaults.font.family = v('--font');
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = muted;
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.plugins.tooltip.backgroundColor = v('--surface-3');
+        Chart.defaults.plugins.tooltip.titleColor = v('--text');
+        Chart.defaults.plugins.tooltip.bodyColor = v('--text-2');
+        Chart.defaults.plugins.tooltip.borderColor = v('--border-strong');
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+        Chart.defaults.plugins.legend.labels.boxWidth = 8;
+
+        const axes = {
+          x: { grid: { display: false }, border: { display: false } },
+          y: { beginAtZero: true, grid: { color: border }, border: { display: false }, ticks: { precision: 0 } },
+        };
+        const bar = (id, labels, values, color) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          new Chart(el, {
+            type: 'bar',
+            data: { labels, datasets: [{ data: values, backgroundColor: color, borderRadius: 6, maxBarThickness: 36 }] },
+            options: { plugins: { legend: { display: false } }, scales: axes },
+          });
+        };
+        const doughnut = (id, labels, values) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          new Chart(el, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: values, backgroundColor: palette, borderColor: surface, borderWidth: 3, hoverOffset: 6 }] },
+            options: { cutout: '68%', plugins: { legend: { position: 'right' } } },
+          });
+        };
+
         const d = dataPayload.byDay.slice().reverse();
-        if (d.length && document.getElementById('chartDaily')) {
-          new Chart(document.getElementById('chartDaily'), {
+        const daily = document.getElementById('chartDaily');
+        if (daily) {
+          const g = daily.getContext('2d').createLinearGradient(0, 0, 0, 240);
+          g.addColorStop(0, accent + '55');
+          g.addColorStop(1, accent + '00');
+          new Chart(daily, {
             type: 'line',
-            data: { labels: d.map(x=>x.day), datasets: [{ label: 'Clics', data: d.map(x=>x.c), borderColor:'#6ea8ff', backgroundColor:'rgba(110,168,255,.2)', fill:true, tension:.35 }]},
-            options: { plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'rgba(255,255,255,.05)' } }, y:{ grid:{ color:'rgba(255,255,255,.05)' } } } }
+            data: { labels: d.map(x => x.day), datasets: [{ data: d.map(x => x.c), borderColor: accent, backgroundColor: g, fill: true, tension: .35, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: accent }] },
+            options: { interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: axes },
           });
         }
 
-        // Browser (doughnut)
-        const b = dataPayload.byBrowser;
-        if (b.length && document.getElementById('chartBrowser')) {
-          new Chart(document.getElementById('chartBrowser'), {
-            type: 'doughnut',
-            data: { labels: b.map(x=>x.browser||'N/A'), datasets: [{ data: b.map(x=>x.c), backgroundColor: palette(b.length) }]},
-            options: { plugins:{ legend:{ position:'bottom' } } }
-          });
-        }
-
-        // OS (doughnut)
-        const os = dataPayload.byOs;
-        if (os.length && document.getElementById('chartOS')) {
-          new Chart(document.getElementById('chartOS'), {
-            type: 'doughnut',
-            data: { labels: os.map(x=>x.os||'N/A'), datasets: [{ data: os.map(x=>x.c), backgroundColor: palette(os.length) }]},
-            options: { plugins:{ legend:{ position:'bottom' } } }
-          });
-        }
-
-        // Device (bar)
-        const dev = dataPayload.deviceDist;
-        if (dev.length && document.getElementById('chartDevice')) {
-          new Chart(document.getElementById('chartDevice'), {
-            type: 'bar',
-            data: { labels: dev.map(x=>x.device||'N/A'), datasets: [{ label:'Appareils', data: dev.map(x=>x.c), backgroundColor:'#36d399' }]},
-            options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
-          });
-        }
-
-        // Hour of day (bar)
-        const hr = dataPayload.byHour;
-        if (hr.length && document.getElementById('chartHour')) {
-          new Chart(document.getElementById('chartHour'), {
-            type: 'bar',
-            data: { labels: hr.map(x=>x.hour), datasets: [{ label:'Clics', data: hr.map(x=>x.c), backgroundColor:'#a78bfa' }]},
-            options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
-          });
-        }
-
-        // Referrers (bar)
-        const rf = dataPayload.topReferrers;
-        if (rf.length && document.getElementById('chartRef')) {
-          new Chart(document.getElementById('chartRef'), {
-            type: 'bar',
-            data: { labels: rf.map(x=>x.referer||'Direct'), datasets: [{ label:'Référents', data: rf.map(x=>x.c), backgroundColor:'#ffb366' }]},
-            options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
-          });
-        }
+        doughnut('chartBrowser', dataPayload.byBrowser.map(x => x.browser || 'N/A'), dataPayload.byBrowser.map(x => x.c));
+        doughnut('chartOS', dataPayload.byOs.map(x => x.os || 'N/A'), dataPayload.byOs.map(x => x.c));
+        bar('chartDevice', dataPayload.deviceDist.map(x => x.device || 'N/A'), dataPayload.deviceDist.map(x => x.c), '#3ecf8e');
+        bar('chartHour', dataPayload.byHour.map(x => x.hour + 'h'), dataPayload.byHour.map(x => x.c), '#b07cff');
+        bar('chartRef', dataPayload.topReferrers.map(x => x.referer || 'Direct'), dataPayload.topReferrers.map(x => x.c), '#f5b454');
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
     </script>
   `;
-  return layout(`Analytics ${id}`, content);
+  return layout(`Analytics ${id}`, content, { crumbs: [{ label: id, href: `/panel/${encodeURIComponent(id)}` }, { label: 'Analytics' }] });
 }
 
 module.exports = { analyticsView };

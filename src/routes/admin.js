@@ -1,13 +1,5 @@
 const express = require('express');
-// Short, easy-to-read ID generator (no ambiguous chars)
-function genId(len = 7) {
-  const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
-  let out = '';
-  for (let i = 0; i < len; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return out;
-}
+const { genId } = require('../utils/id');
 const db = require('../services/db');
 const { adminListView } = require('../views/adminListView');
 const { adminDetailView } = require('../views/adminDetailView');
@@ -60,6 +52,7 @@ router.post('/admin/add', async (req, res) => {
       id = String(id).trim();
       const valid = /^[A-Za-z0-9_-]{3,20}$/.test(id);
       if (!valid) return res.status(400).send('ID invalide (utilisez 3-20 caractères: lettres, chiffres, - et _)');
+      if (id === 'notes') return res.status(409).send('ID réservé. Choisissez un autre.');
       // Ensure uniqueness
       const exists = await db.getGroup(id);
       if (exists) return res.status(409).send('ID déjà utilisé. Choisissez un autre.');

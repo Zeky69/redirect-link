@@ -57,6 +57,14 @@ db.serialize(() => {
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
     FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE SET NULL
   )`);
+  db.run(`CREATE TABLE IF NOT EXISTS notes (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    excerpt TEXT NOT NULL DEFAULT '',
+    state BLOB,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`);
 });
 
 function toBoolean(i) {
@@ -249,7 +257,36 @@ async function exportClicksCSV(groupId) {
   return lines.join('\n');
 }
 
+// ---------- Notes (collaborative notepads) ----------
+async function listNotes() {
+  return all('SELECT id, title, excerpt, created_at, updated_at FROM notes ORDER BY updated_at DESC');
+}
+
+async function getNote(id) {
+  return get('SELECT id, title, excerpt, state, created_at, updated_at FROM notes WHERE id = ?', [id]);
+}
+
+async function createNote(id, title = '') {
+  const now = Date.now();
+  await run('INSERT INTO notes (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)', [id, title, now, now]);
+}
+
+async function saveNoteState(id, { state, title, excerpt }) {
+  const res = await run('UPDATE notes SET state = ?, title = ?, excerpt = ?, updated_at = ? WHERE id = ?', [state, title, excerpt, Date.now(), id]);
+  return res.changes > 0;
+}
+
+async function deleteNote(id) {
+  const res = await run('DELETE FROM notes WHERE id = ?', [id]);
+  return res.changes > 0;
+}
+
 module.exports = {
+  listNotes,
+  getNote,
+  createNote,
+  saveNoteState,
+  deleteNote,
   getAllDataShape,
   getGroup,
   createGroupWithUrls,

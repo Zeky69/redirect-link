@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "dev": "NODE_ENV=development node index.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "NODE_ENV=development node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-  "sqlite3": "^5.1.7",
-  "dotenv": "^16.4.5",
-  "express": "^4.21.1",
-  "geoip-lite": "^1.4.10",
-  "ua-parser-js": "^1.0.37"
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "geoip-lite": "^1.4.10",
+    "sqlite3": "^5.1.7",
+    "ua-parser-js": "^1.0.37",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
   }
 }
