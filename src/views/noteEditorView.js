@@ -11,12 +11,15 @@ function noteEditorView(note) {
       <div class="status" id="status"><span class="dot"></span><span id="statusText">Connexion…</span></div>
       <div class="actions">
         <span class="badge" id="presence" hidden>${icon('users')} <span></span></span>
+        <a class="btn btn-sm" href="/n/${esc(id)}/txt">${icon('note')} Version texte</a>
         <button class="btn btn-sm" type="button" id="copyLink">${icon('link')} Copier le lien</button>
         <form method="POST" action="/admin/notes/${esc(id)}/delete" onsubmit="return confirm('Supprimer définitivement cette note pour tout le monde ?')">
           <button class="btn btn-ghost btn-icon btn-danger" type="submit" title="Supprimer" aria-label="Supprimer">${icon('trash')}</button>
         </form>
       </div>
     </div>
+
+    <noscript><p>JavaScript est désactivé : <a href="/n/${esc(id)}/txt">lire la note en version texte</a>.</p></noscript>
 
     <input class="note-title" id="title" type="text" placeholder="Sans titre" value="${esc(note.title)}" maxlength="120" autocomplete="off" />
 

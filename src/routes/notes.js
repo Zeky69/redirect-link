@@ -4,6 +4,7 @@ const notesHub = require('../services/notesHub');
 const { genId } = require('../utils/id');
 const { notesListView } = require('../views/notesListView');
 const { noteEditorView } = require('../views/noteEditorView');
+const { noteTextView } = require('../views/noteTextView');
 const { notFoundView } = require('../views/notFoundView');
 
 const router = express.Router();
@@ -25,6 +26,13 @@ router.get('/n/:id', async (req, res) => {
   const note = await db.getNote(req.params.id);
   if (!note) return res.status(404).send(notFoundView('Note introuvable'));
   res.send(noteEditorView(note));
+});
+
+// Read-only version: plain text, no JavaScript, no WebSocket
+router.get('/n/:id/txt', async (req, res) => {
+  const note = await notesHub.readNote(req.params.id);
+  if (!note) return res.status(404).send(notFoundView('Note introuvable'));
+  res.set('Cache-Control', 'no-store').send(noteTextView(req.params.id, note));
 });
 
 router.post('/admin/notes/:id/delete', async (req, res) => {

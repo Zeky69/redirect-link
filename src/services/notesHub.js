@@ -134,4 +134,22 @@ async function closeNote(id) {
   for (const client of room.clients) client.close(4404, 'Note supprimée');
 }
 
-module.exports = { attach, closeNote };
+// Plain-text snapshot of a note (for the no-JS view). Uses the live doc when the note is open
+// so unsaved edits are included, otherwise the state stored in the database.
+async function readNote(id) {
+  const room = await rooms.get(id);
+  if (room && !room.closed && !room.destroyed) return plain(room.doc);
+  const row = await db.getNote(id);
+  if (!row) return null;
+  const doc = new Y.Doc();
+  if (row.state) Y.applyUpdate(doc, new Uint8Array(row.state));
+  const note = plain(doc);
+  doc.destroy();
+  return note;
+}
+
+function plain(doc) {
+  return { title: doc.getText('title').toString().trim(), text: doc.getText('quill').toString() };
+}
+
+module.exports = { attach, closeNote, readNote };
